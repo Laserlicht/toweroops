@@ -29,7 +29,7 @@ impl Default for Settings {
 
 fn project_config_dir() -> Option<PathBuf> {
     // Use application-specific qualifiers; these determine platform default locations.
-    ProjectDirs::from("io.github", "laserlicht", "TowerOops").map(|p| p.config_dir().to_path_buf())
+    ProjectDirs::from("io.github", "laserlicht", "Tower-Oops").map(|p| p.config_dir().to_path_buf())
 }
 
 fn ensure_config_dir() -> io::Result<PathBuf> {
