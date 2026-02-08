@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <component type="desktop">
-  <id>io.github.tower_oops.desktop</id>
+  <id>io.github.tower_oops</id>
   <metadata_license>CC0-1.0</metadata_license>
   <project_license>MIT</project_license>
   <name>Tower Oops!</name>
@@ -28,5 +28,4 @@
     <keyword>puzzle</keyword>
     <keyword>tower puzzle</keyword>
   </keywords>
-  <launchable type="desktop-id">io.github.tower_oops.desktop</launchable>
 </component>
