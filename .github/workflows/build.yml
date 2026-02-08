@@ -1,0 +1,162 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build-linux:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-gnu
+            arch_label: x64
+            runner: ubuntu-22.04
+          - target: aarch64-unknown-linux-gnu
+            arch_label: ARM64
+            runner: ubuntu-22.04-arm
+
+    name: Linux ${{ matrix.arch_label }}
+
+    runs-on: ${{ matrix.runner }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libgtk-4-dev \
+            pkg-config \
+            pax-utils
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: rust-cache-${{ matrix.target }}-${{ matrix.runner }}-${{ runner.os }}-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Build
+        run: cargo build --release
+
+      - name: Install appimagetool
+        run: |
+          set -euo pipefail
+          case "${{ matrix.arch_label }}" in
+            x64)
+              APPIMAGE_ARCH="x86_64"
+              APPIMG_URL="https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage"
+              ;;
+            ARM64)
+              APPIMAGE_ARCH="aarch64"
+              APPIMG_URL="https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-aarch64.AppImage"
+              ;;
+            *)
+              echo "Unknown arch_label: ${matrix.arch_label}" >&2; exit 1 ;;
+          esac
+
+          echo "Downloading appimagetool from $APPIMG_URL"
+          wget -q "$APPIMG_URL" -O appimagetool
+          chmod +x appimagetool
+
+      - name: Create AppImage
+        run: |
+          mkdir -p AppDir/usr/bin AppDir/usr/share/applications AppDir/usr/share/icons/hicolor/256x256/apps AppDir/usr/share/tower_oops/resources AppDir/usr/lib
+
+          cp target/release/tower_oops AppDir/usr/bin/
+          cp resources/* AppDir/usr/share/tower_oops/resources/
+          # Also provide a top-level `resources/` so the app's `find_resources_dir()`
+          # (which checks `./resources`) finds the files when executed from AppDir.
+          mkdir -p AppDir/resources
+          cp -r resources/* AppDir/resources/
+
+          if command -v rsvg-convert &> /dev/null; then
+            rsvg-convert -w 256 -h 256 resources/icon.svg -o AppDir/usr/share/icons/hicolor/256x256/apps/tower_oops.png
+            cp AppDir/usr/share/icons/hicolor/256x256/apps/tower_oops.png AppDir/tower_oops.png
+          else
+            cp resources/icon.svg AppDir/tower_oops.svg
+          fi
+
+          cat > AppDir/tower_oops.desktop << 'EOF'
+          [Desktop Entry]
+          Name=Tower Oops!
+          Exec=tower_oops
+          Icon=tower_oops
+          Type=Application
+          Categories=Game;
+          EOF
+          cp AppDir/tower_oops.desktop AppDir/usr/share/applications/
+
+          cat > AppDir/AppRun << 'APPRUN'
+          #!/usr/bin/env bash
+          SELF=$(readlink -f "$0")
+          HERE=${SELF%/*}
+          LIBPATHS=$(find "${HERE}/usr/lib" -maxdepth 2 -type d -printf "%p:")
+          export LD_LIBRARY_PATH="${LIBPATHS}${LD_LIBRARY_PATH}"
+          export PATH="${HERE}/usr/bin:${PATH}"
+          # Ensure data dirs include the AppDir share so GTK/GIO can find resources
+          export XDG_DATA_DIRS="${HERE}/usr/share:${XDG_DATA_DIRS}"
+          # Optional: set GSETTINGS_SCHEMA_DIR if schemas are bundled
+          export GSETTINGS_SCHEMA_DIR="${HERE}/usr/share/glib-2.0/schemas:${GSETTINGS_SCHEMA_DIR}"
+          # Run from AppDir so relative resource paths resolve correctly
+          cd "${HERE}"
+          exec "${HERE}/usr/bin/tower_oops" "$@"
+          APPRUN
+          chmod +x AppDir/AppRun
+
+          # Collect shared libraries but DO NOT bundle the system C library or the dynamic loader.
+          # Bundling glibc (libc.so.6) causes symbol/version conflicts on target hosts.
+          set -x
+          if command -v lddtree >/dev/null 2>&1; then
+            echo "Using lddtree to collect dependencies"
+            lddtree -l target/release/tower_oops | tr ' ' '\n' | grep '^/' | sort -u > /tmp/tower_libs.lst || true
+          else
+            echo "lddtree not found — falling back to ldd"
+            ldd target/release/tower_oops | awk '/=>/ {print $3} /^[^\t].*not/ {print $1}' | grep '^/' | sort -u > /tmp/tower_libs.lst || true
+          fi
+
+          echo "Collected library list:";
+          sed -n '1,200p' /tmp/tower_libs.lst || true
+
+          # Copy only needed libs — skip the system C runtime and dynamic loader explicitly.
+          mkdir -p AppDir/usr/lib
+          echo "Filtering and copying libraries (skipping libc/ld):"
+          while read -r lib; do
+            if [ -z "$lib" ] || [ ! -e "$lib" ]; then
+              continue
+            fi
+            base=$(basename "$lib")
+            case "$base" in
+              libc.so.6|linux-vdso.so*|ld-linux*|ld-*.so)
+                echo "Skipping system lib: $lib"
+                continue
+                ;;
+            esac
+            echo "Copying $lib"
+            cp -L "$lib" AppDir/usr/lib/ || true
+          done < /tmp/tower_libs.lst
+
+          echo "Final AppDir/usr/lib contents:"; ls -la AppDir/usr/lib || true
+          set +x
+
+          case "${{ matrix.arch_label }}" in
+            x64)   export ARCH=x86_64 ;;
+            ARM64) export ARCH=aarch64 ;;
+          esac
+
+          ./appimagetool --appimage-extract-and-run AppDir "Tower_Oops-linux-${{ matrix.arch_label }}.AppImage"
+
+      - name: Upload AppImage
+        uses: actions/upload-artifact@v4
+        with:
+          name: tower_oops-linux-${{ matrix.arch_label }}
+          path: Tower_Oops-linux-${{ matrix.arch_label }}.AppImage
