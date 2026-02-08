@@ -9,7 +9,7 @@ use gtk4::Application;
 
 fn main() {
     let app = Application::builder()
-        .application_id("com.example.unstabletowers")
+        .application_id("io.github.tower_oops")
         .build();
 
     app.connect_activate(|app| {
