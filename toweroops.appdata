@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <component type="desktop">
   <id>io.github.laserlicht.TowerOops</id>
+  <launchable type="desktop-id">io.github.laserlicht.TowerOops.desktop</launchable>
   <metadata_license>CC0-1.0</metadata_license>
   <project_license>MIT</project_license>
   <name>Tower Oops!</name>
@@ -18,6 +19,7 @@
   <url type="homepage">https://github.com/Laserlicht/toweroops</url>
   <url type="bugtracker">https://github.com/Laserlicht/toweroops/issues</url>
   <url type="help">https://github.com/Laserlicht/toweroops#readme</url>
+  <url type="vcs-browser">https://github.com/Laserlicht/toweroops</url>
   <screenshots>
     <screenshot type="default">
       <image>https://raw.githubusercontent.com/Laserlicht/toweroops/main/screenshot.png</image>
@@ -28,4 +30,16 @@
     <keyword>puzzle</keyword>
     <keyword>tower puzzle</keyword>
   </keywords>
+  <content_rating type="oars-1.1" />
+  <releases>
+    <release version="0.1.0" date="2026-02-09">
+      <url type="details">https://github.com/Laserlicht/toweroops/releases/tag/0.1.0</url>
+      <description>
+        <p>Release description</p>
+          <ul>
+            <li>Initial release</li>
+          </ul>
+      </description>
+    </release>
+  </releases>
 </component>
