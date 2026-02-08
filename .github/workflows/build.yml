@@ -70,31 +70,31 @@ jobs:
 
       - name: Create AppImage
         run: |
-          mkdir -p AppDir/usr/bin AppDir/usr/share/applications AppDir/usr/share/icons/hicolor/256x256/apps AppDir/usr/share/tower_oops/resources AppDir/usr/lib
+          mkdir -p AppDir/usr/bin AppDir/usr/share/applications AppDir/usr/share/icons/hicolor/256x256/apps AppDir/usr/share/toweroops/resources AppDir/usr/lib
 
-          cp target/release/tower_oops AppDir/usr/bin/
-          cp resources/* AppDir/usr/share/tower_oops/resources/
+          cp target/release/toweroops AppDir/usr/bin/
+          cp resources/* AppDir/usr/share/toweroops/resources/
           # Also provide a top-level `resources/` so the app's `find_resources_dir()`
           # (which checks `./resources`) finds the files when executed from AppDir.
           mkdir -p AppDir/resources
           cp -r resources/* AppDir/resources/
 
           if command -v rsvg-convert &> /dev/null; then
-            rsvg-convert -w 256 -h 256 resources/icon.svg -o AppDir/usr/share/icons/hicolor/256x256/apps/tower_oops.png
-            cp AppDir/usr/share/icons/hicolor/256x256/apps/tower_oops.png AppDir/tower_oops.png
+            rsvg-convert -w 256 -h 256 resources/icon.svg -o AppDir/usr/share/icons/hicolor/256x256/apps/toweroops.png
+            cp AppDir/usr/share/icons/hicolor/256x256/apps/toweroops.png AppDir/toweroops.png
           else
-            cp resources/icon.svg AppDir/tower_oops.svg
+            cp resources/icon.svg AppDir/toweroops.svg
           fi
 
-          cat > AppDir/tower_oops.desktop << 'EOF'
+          cat > AppDir/toweroops.desktop << 'EOF'
           [Desktop Entry]
           Name=Tower Oops!
-          Exec=tower_oops
-          Icon=tower_oops
+          Exec=toweroops
+          Icon=toweroops
           Type=Application
           Categories=Game;
           EOF
-          cp AppDir/tower_oops.desktop AppDir/usr/share/applications/
+          cp AppDir/toweroops.desktop AppDir/usr/share/applications/
 
           cat > AppDir/AppRun << 'APPRUN'
           #!/usr/bin/env bash
@@ -109,7 +109,7 @@ jobs:
           export GSETTINGS_SCHEMA_DIR="${HERE}/usr/share/glib-2.0/schemas:${GSETTINGS_SCHEMA_DIR}"
           # Run from AppDir so relative resource paths resolve correctly
           cd "${HERE}"
-          exec "${HERE}/usr/bin/tower_oops" "$@"
+          exec "${HERE}/usr/bin/toweroops" "$@"
           APPRUN
           chmod +x AppDir/AppRun
 
@@ -118,10 +118,10 @@ jobs:
           set -x
           if command -v lddtree >/dev/null 2>&1; then
             echo "Using lddtree to collect dependencies"
-            lddtree -l target/release/tower_oops | tr ' ' '\n' | grep '^/' | sort -u > /tmp/tower_libs.lst || true
+            lddtree -l target/release/toweroops | tr ' ' '\n' | grep '^/' | sort -u > /tmp/tower_libs.lst || true
           else
             echo "lddtree not found — falling back to ldd"
-            ldd target/release/tower_oops | awk '/=>/ {print $3} /^[^\t].*not/ {print $1}' | grep '^/' | sort -u > /tmp/tower_libs.lst || true
+            ldd target/release/toweroops | awk '/=>/ {print $3} /^[^\t].*not/ {print $1}' | grep '^/' | sort -u > /tmp/tower_libs.lst || true
           fi
 
           echo "Collected library list:";
@@ -153,10 +153,10 @@ jobs:
             ARM64) export ARCH=aarch64 ;;
           esac
 
-          ./appimagetool --appimage-extract-and-run AppDir "Tower_Oops-linux-${{ matrix.arch_label }}.AppImage"
+          ./appimagetool --appimage-extract-and-run AppDir "toweroops-linux-${{ matrix.arch_label }}.AppImage"
 
       - name: Upload AppImage
         uses: actions/upload-artifact@v4
         with:
-          name: tower_oops-linux-${{ matrix.arch_label }}
-          path: Tower_Oops-linux-${{ matrix.arch_label }}.AppImage
+          name: toweroops-linux-${{ matrix.arch_label }}
+          path: toweroops-linux-${{ matrix.arch_label }}.AppImage
