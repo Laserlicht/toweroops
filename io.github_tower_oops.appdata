@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop">
+  <id>io.github.tower_oops.desktop</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>MIT</project_license>
+  <name>Tower Oops!</name>
+  <developer_name>Laserlicht</developer_name>
+  <summary>A modern GTK4 port of the classic "Crazy Towers" puzzle game.</summary>
+  <description>
+    <p>Tower Oops! is a small tower/match puzzle game: a modern GTK4 port
+    of the classic "Crazy Towers", rewritten in Rust. It features multiple
+    AI difficulty levels (including Minimax with alpha-beta pruning) and a
+    modular codebase for clarity and extension.</p>
+    <p>The game supports clicking cells to select or place towers, has menu
+    controls to start a new game and change who begins, and provides
+    settings accessible from the UI.</p>
+  </description>
+  <url type="homepage">https://github.com/Laserlicht/tower_oops</url>
+  <url type="bugtracker">https://github.com/Laserlicht/tower_oops/issues</url>
+  <url type="help">https://github.com/Laserlicht/tower_oops#readme</url>
+  <screenshots>
+    <screenshot type="default">
+      <image>https://raw.githubusercontent.com/Laserlicht/tower_oops/main/screenshot.png</image>
+      <caption>Gameplay / board view</caption>
+    </screenshot>
+  </screenshots>
+  <keywords>
+    <keyword>puzzle</keyword>
+    <keyword>tower puzzle</keyword>
+  </keywords>
+  <launchable type="desktop-id">io.github.tower_oops.desktop</launchable>
+</component>

@@ -6,6 +6,8 @@ Summary: a small tower/match puzzle game.
 
 Fully ported to Rust and modularized for clarity and extension. Multiple AI difficulty levels (including Minimax with alpha-beta pruning).
 
+![Screenshot](screenshot.png)
+
 ## Build & Run
 
 Prerequisites (Debian/Ubuntu):
@@ -39,13 +41,14 @@ cargo run
 
 ## Contributing
 
-Contributions are welcome. For changes that affect performance or resource
-handling where appropriate. Please open pull requests against `main`.
+Contributions are welcome. For changes that affect performance or resource handling where appropriate. Please open pull requests against `main`.
+
+Pay attention. Code is created by "vibe coding".
 
 ## Credits, links and licenses
 
 - Project source code: MIT (see `LICENSE`).
-- Graphic assets referenced in this repo are public-domain / CC0 where noted.
+- Graphic assets referenced in this repo are public-domain (e.g. AI generated) / CC0 where noted.
 
 Related links:
 
