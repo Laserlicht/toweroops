@@ -160,3 +160,82 @@ jobs:
         with:
           name: toweroops-linux-${{ matrix.arch_label }}
           path: toweroops-linux-${{ matrix.arch_label }}.AppImage
+
+  build-windows:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch_label: x64
+            runner: windows-latest
+            msystem: MINGW64
+            pkg_prefix: mingw-w64-x86_64
+            lib_dir: /mingw64
+          - arch_label: ARM64
+            runner: windows-11-arm
+            msystem: CLANGARM64
+            pkg_prefix: mingw-w64-clang-aarch64
+            lib_dir: /clangarm64
+
+    name: Windows ${{ matrix.arch_label }}
+
+    runs-on: ${{ matrix.runner }}
+
+    defaults:
+      run:
+        shell: msys2 {0}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: ${{ matrix.msystem }}
+          update: true
+          install: >-
+            ${{ matrix.pkg_prefix }}-gtk4
+            ${{ matrix.pkg_prefix }}-pkg-config
+            ${{ matrix.pkg_prefix }}-rust
+            ${{ matrix.pkg_prefix }}-ntldd
+
+      - name: Build
+        run: cargo build --release
+
+      - name: Bundle binary and DLLs
+        run: |
+          mkdir -p bundle/resources
+
+          cp target/release/toweroops.exe bundle/
+          cp resources/* bundle/resources/
+
+          # Collect all non-system DLLs required by the binary
+          ntldd -R bundle/toweroops.exe \
+            | awk '{print $3}' \
+            | grep -iv 'Windows\|system32\|SysWOW64\|^$' \
+            | sort -u \
+            | while read -r dll; do
+                [ -f "$dll" ] && cp -n "$dll" bundle/ 2>/dev/null || true
+              done
+
+          # Bundle compiled GLib schemas so GTK4 settings work
+          mkdir -p bundle/share/glib-2.0/schemas
+          cp "${{ matrix.lib_dir }}/share/glib-2.0/schemas/gschemas.compiled" \
+             bundle/share/glib-2.0/schemas/ 2>/dev/null || true
+
+      - name: Create single SFX executable
+        shell: pwsh
+        run: |
+          $sfxConf = ";!@Install@!UTF-8!`nTitle=`"Tower Oops!`"`nRunProgram=`"toweroops.exe`"`n;!@InstallEnd@!"
+          $sfxConf | Set-Content -Encoding UTF8 sfx.cfg
+
+          $7zExe  = "C:\Program Files\7-Zip\7z.exe"
+          $sfxMod = "C:\Program Files\7-Zip\7z.sfx"
+
+          & $7zExe a -mx5 tmp.7z ./bundle/*
+          cmd /c "copy /b `"$sfxMod`" + sfx.cfg + tmp.7z `"toweroops-windows-${{ matrix.arch_label }}.exe`""
+
+      - name: Upload EXE
+        uses: actions/upload-artifact@v4
+        with:
+          name: toweroops-windows-${{ matrix.arch_label }}
+          path: toweroops-windows-${{ matrix.arch_label }}.exe
